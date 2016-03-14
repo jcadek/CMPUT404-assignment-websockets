@@ -57,3 +57,5 @@ Contributors
 
 * Mark Galloway
 * Abram Hindle
+
+Modifications 2016 James Cadek, using additional code from abram Hindles https://github.com/abramhindle/WebSocketsExamples

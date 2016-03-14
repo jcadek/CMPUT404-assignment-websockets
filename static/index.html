@@ -1,12 +1,13 @@
 <!DOCTYPE HTML>
 <html> 
   <head> 
-    <title>Websockets Assignment</title> 
+    <title>AJAX Assignment</title> 
     <meta charset="utf-8" /> 
     <meta content='width=device-width; height=device-height; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;' name='viewport' />
     <meta name="viewport" content="width=device-width" />
     <meta name="license" content="
-        Copyright 2013 Google, Abram Hindle
+        Copyright 2013 Abram Hindle
+	Modifications 2016 James Cadek, using additional code from abram Hindles https://github.com/abramhindle/WebSocketsExamples
         
         Licensed under the Apache License, Version 2.0 (the "License");
         you may not use this file except in compliance with the License.
@@ -27,14 +28,22 @@
     <canvas id="c" width="100%" height="100%" style="-webkit-tap-highlight-color: transparent;"></canvas> 
 
     <script>
-      // Fix me
+
+
 var canvas = document.getElementById('c');
 var host = window.location.host;
 var context = canvas.getContext("2d");
 var W = canvas.width  = window.innerWidth-6;
 var H = canvas.height = window.innerHeight-50;
-var wscounter = 0;
-var socket;
+var u = "http://127.0.0.1:8000";
+var x = 0;
+var y = 0;
+var c = "black";
+var r = 3;
+
+
+   
+
 
 function debug(str) {
     var debugDiv = document.getElementById('debug');
@@ -47,7 +56,7 @@ world = {};
 //XXX: TODO Make this prettier!
 function drawCircle(context,entity) {
     with(context) {
-        beginPath();                
+        beginPath();              
         lineWidth = 3;
         var x = entity["x"];
         var y = entity["y"];
@@ -60,6 +69,7 @@ function drawCircle(context,entity) {
 }
 
 function prepEntity(entity) {
+    
     if (!entity["colour"]) {
         entity["colour"] = "#FF0000";
     }
@@ -83,12 +93,13 @@ function renderFrame() {
     clearFrame();
     for (var key in world) {
         var entity = world[key];
+	
         drawCircle(context,prepEntity(entity));
     }
 }
 
 var drawNext = true;
-// Signals that there's something to be drawn
+
 function drawNextFrame() {
     drawNext = true;
 }
@@ -121,13 +132,28 @@ function getPosition(e) {
 	}
 }
 
+function importEntity(entity, data) {
+	
+	world[entity] = data;
+	drawNextFrame();
+}
+
 function addEntity(entity, data) {
     world[entity] = data;
     drawNextFrame(); // (but should we?)
-    //XXX: Send a XHTML Request that updates the entity you just modified!
+    //XXX: Send a XHTML Request that updates the entity you just  modified!
+    if(typeof data.colour == "undefined"){data.colour = "#FF0000";};
+    if(typeof data.radius == "undefined"){data.radius = 50;};
+    c = data.colour;
+    r = data.radius;
+    x = data.x;
+    y = data.y;
+
 }
+
 var counter = 0;
 function addEntityWithoutName(data) {
+    //var name = "X"+Math.floor((Math.random()*100)+1);
     var name = "X"+(counter++)%100;
     addEntity(name,data);
 }
@@ -212,8 +238,7 @@ mouse = (function() {
             self.lasttouch = e;                                         
             return self.mousemove(e);
 	},
-		                                   
-        // Install the mouse listeners
+	// Install the mouse listeners
 	mouseinstall: function() {
             canvas.addEventListener("mousedown",  self.mousedown, false);
             canvas.addEventListener("mousemove",  self.mousemove, false);
@@ -224,6 +249,7 @@ mouse = (function() {
             canvas.addEventListener("touchend",   self.touchend, false);
 	}
     };
+    // Force install!
     self.mouseinstall();
     return self;
 })();
@@ -239,42 +265,80 @@ mouse.mouseuppers.push(function(x,y,clicked,e) {
 });
 
 mouse.mousedraggers.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'green',
-                          'radius':10});
+    var r = Math.floor((Math.random()*5)+1);
+    var p =pickColour();
+  
+    addEntityWithoutName({'x':x,'y':y,'colour':p,
+                          'radius':r});
 });
 
-
+function pickColour() {
+	var colours = ["AliceBlue","AntiqueWhite","Aqua","Aquamarine","Azure"];
+	var c = "#" + Math.floor((Math.random()*256)).toString(16) + Math.floor((Math.random()*256)).toString(16) + Math.floor((Math.random()*256)).toString(16);
+	return c
+}
 function update() {
     drawFrame();
 }
 
-
 function wsSetup() {
+    window.onload = function() {
+    var messageInput = "{'x':" + x + ",'y':" + y + ",'colour':" + c + ",'radius':" + r + "}";
+    var queue = document.getElementById("queue");
+    var host = window.location.host;
     var url = "ws://"+host+"/subscribe";   
-    socket = new WebSocket(url);
+    var socket = new WebSocket(url);
     socket.onopen = function() {
-        //XXX: TODO What are you going to do here?
+	//What are you going to do here
     };
     socket.onerror = function(msg) {
         debug("WebSocket Error:" + msg.data);
     };
     socket.onmessage = function(msg) {  
         try {
-            debug("WebSocket Recv:" + msg.data);
-            //XXX: TODO What are you going to do here?            
+            vobj = JSON.parse(xhr.responseText);
+	    ttl = 0;
+	    for (var key in obj) {
+		ttl = ttl = 1;
+	        callback(key, obj[key]);
+	    }
+	    if(ttl == 0){world = {};drawNextFrame();}
         } catch (e) {
             alert("socket on message: " + e);
         }
     }; 
+    messageInput.onmouseup = function(evt) {
+        if (evt.keyCode === 13) {
+            socket.send( JSON.stringify( {"msg": messageInput.value } ) );
+            messageInput.value = "";
+            return evt.preventDefault();
+        }
+    };
+    function debug(str) {
+        var debugDiv = document.getElementById('debug');
+        debugDiv.innerHTML = "" + str;
+    };
+   
+};
 }
 
 wsSetup();
-
-
-
-
 // 30 frames per second
-setInterval( update, 1000/30.0);
+setInterval( update, 100);
+
+
+
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
 
 
     </script>
