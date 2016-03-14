@@ -308,11 +308,11 @@ function wsSetup() {
         }
     }; 
     messageInput.onmouseup = function(evt) {
-        if (evt.keyCode === 13) {
+       
             socket.send( JSON.stringify( {"msg": messageInput.value } ) );
             messageInput.value = "";
             return evt.preventDefault();
-        }
+        
     };
     function debug(str) {
         var debugDiv = document.getElementById('debug');
